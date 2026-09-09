@@ -154,6 +154,21 @@ else
     echo "FAIL: --staged rejected an honest empty staged set"
     fail=1
 fi
+
+# --- 6. A staged blob read failure must not masquerade as a finding ----------
+fake_oid='1111111111111111111111111111111111111111'
+git -C "$staged_repo" update-index --add --cacheinfo 100644,$fake_oid,unreadable.txt
+if unreadable_output="$(cd "$staged_repo" && "$CHECK" --staged 2>&1)"; then
+    echo "FAIL: --staged passed when git could not read staged bytes"
+    fail=1
+elif ! grep -Fq 'could not read staged bytes for unreadable.txt' <<< "$unreadable_output"; then
+    echo "FAIL: --staged did not distinguish an unreadable staged blob"
+    fail=1
+elif grep -Fq 'staged content contains' <<< "$unreadable_output"; then
+    echo "FAIL: unreadable staged bytes were reported as a credential finding"
+    fail=1
+fi
+git -C "$staged_repo" update-index --force-remove unreadable.txt
 if [ "$fail" != 0 ]; then exit 1; fi
 echo "ok: catches real-shaped credentials, ignores this repo's fixtures"
 echo "ok: the whole tracked tree scans clean, and findings never echo the secret"

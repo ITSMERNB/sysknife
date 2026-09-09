@@ -88,7 +88,12 @@ if [ "${1:-}" = "--staged" ]; then
     fi
     for path in "${staged_paths[@]}"; do
         [ -n "$path" ] || continue
-        git show ":$path" 2>/dev/null | scan_text "staged $path" || status=1
+        staged_content=""
+        if ! staged_content="$(git show ":$path" 2>/dev/null)"; then
+            printf 'Refusing to commit: git could not read staged bytes for %s.\n' "$path" >&2
+            exit 1
+        fi
+        printf '%s' "$staged_content" | scan_text "staged $path" || status=1
     done
 else
     for path in "$@"; do
