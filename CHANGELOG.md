@@ -17,6 +17,9 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 - Make Debian stable releases 12 and later eligible, while refusing an unknown
   version and releases below the security-support floor. Debian eligibility is
   separate from live-VM validation; Ubuntu-only actions remain excluded (#238).
+- Let `UfwStatus` return numbered rules with `numbered: true`, retaining verbose
+  output by default. Add `query_ufw_rules` so the planner can read the indices
+  required by `UfwDeleteRule` instead of guessing them (#234).
 - Separate Ubuntu identity requirements from Debian-family mechanisms and
   planner defaults. Canonical services, PPAs and the reboot sentinel require
   Ubuntu itself; portable tools are no longer refused merely for being another
@@ -32,6 +35,13 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ### Fixed
 
+- `check_no_secrets.sh --staged` fails closed when git cannot answer. The
+  pre-commit credential scanner built its file list through process
+  substitution, which `set -euo pipefail` cannot see into, so a failing
+  `git diff --cached` left the loop with nothing to do and the scanner exited 0
+  having read no bytes. A staged blob git cannot read now stops the commit with
+  its own message instead of the credential-found banner, and an honest empty
+  staged set still passes in silence (#406).
 - Attach the default safety audit log in `LlmPlanner::from_config`, the
   construction path the CLI, the MCP server and the shell all take. Fence
   rejections were built and tested and never written anywhere, so a rejected
