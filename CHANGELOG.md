@@ -35,6 +35,13 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ### Fixed
 
+- `check_no_secrets.sh --staged` fails closed when git cannot answer. The
+  pre-commit credential scanner built its file list through process
+  substitution, which `set -euo pipefail` cannot see into, so a failing
+  `git diff --cached` left the loop with nothing to do and the scanner exited 0
+  having read no bytes. A staged blob git cannot read now stops the commit with
+  its own message instead of the credential-found banner, and an honest empty
+  staged set still passes in silence (#406).
 - Attach the default safety audit log in `LlmPlanner::from_config`, the
   construction path the CLI, the MCP server and the shell all take. Fence
   rejections were built and tested and never written anywhere, so a rejected
