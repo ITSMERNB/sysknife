@@ -12,6 +12,8 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-09-10
+
 ### Changed
 
 - Make Debian stable releases 12 and later eligible, while refusing an unknown
