@@ -35,6 +35,23 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ### Fixed
 
+- The default Groq model is `openai/gpt-oss-120b`. Groq decommissioned
+  `llama-3.3-70b-versatile`, so every SysKnife user on the Groq provider who had
+  not overridden `SYSKNIFE_LLM_MODEL` was getting an HTTP 404 from the planner.
+  Found by running the planner against the live API rather than a cassette:
+
+  ```
+  llama-3.3-70b-versatile      HTTP 404   model_not_found
+  openai/gpt-oss-120b          HTTP 200
+  ```
+
+  The replacement was chosen by running SysKnife's real prompt and tool schema
+  against it: a three-part read-only intent planned `GetDiskUsage`,
+  `GetMemoryInfo` and `ListServices` with no query preamble, and a Debian 12
+  host planned `AptInstall` with no Ubuntu-only action offered. All seven
+  reference sites move together, which `tests/e2e/provider-parity.test.sh`
+  enforces.
+
 - Sanitise the distro version string before it reaches the prompt header. A
   crafted `/etc/os-release` could put tag syntax into the version and open a
   second `<user_preferences>` envelope around the constraints, risk tables and
