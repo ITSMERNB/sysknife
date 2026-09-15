@@ -68,6 +68,10 @@ sysknife ALL=(root) NOPASSWD: /usr/bin/localectl
 # writes to /etc/firewalld/ which requires root.
 sysknife ALL=(root) NOPASSWD: /usr/bin/resolvectl
 
+# Fixed read-only nftables probes; the reporter itself has NO sudo grant.
+sysknife ALL=(root) NOPASSWD: /usr/sbin/nft list ruleset
+sysknife ALL=(root) NOPASSWD: /usr/sbin/nft -j list ruleset
+
 # nmcli — ConfigureWifi (`nmcli device wifi connect <ssid> [password <pw>]`) on
 # Ubuntu Desktop, where NetworkManager owns the interfaces rather than netplan.
 # Narrowed to the wifi-connect subcommand: a bare nmcli grant would also permit

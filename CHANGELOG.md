@@ -12,6 +12,14 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+### Added
+
+- Add read-only nftables ruleset and firewall-backend observations. General
+  firewall queries preserve failed/unknown probes and do not equate inactive
+  ufw with an unfiltered host. Safety notes precede bounded diagnostic excerpts
+  so large rulesets retain valid JSON and the interpretation caveat within the
+  planner output cap; mutating nftables actions remain out of scope (#239).
+
 ### Changed
 
 - Remove whole-binary shell and runuser sudo grants. Firewall, group, Snap,
