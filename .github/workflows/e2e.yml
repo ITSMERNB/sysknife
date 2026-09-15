@@ -30,6 +30,7 @@ on:
       - "tests/release/**"
       - "scripts/**"
       - "assets/demo/**"
+      - ".githooks/**"
       - "apps/sysknife-cli/**"
       # scripts-lint builds sysknife-cli, which depends on every crate under
       # crates/. Without this the job could not be triggered by a change to the
@@ -46,6 +47,7 @@ on:
       - "tests/release/**"
       - "scripts/**"
       - "assets/demo/**"
+      - ".githooks/**"
       - "apps/sysknife-cli/**"
       # scripts-lint builds sysknife-cli, which depends on every crate under
       # crates/. Without this the job could not be triggered by a change to the

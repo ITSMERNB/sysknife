@@ -44,6 +44,13 @@ done <"$tmp/tracked"
 [[ -n "${scanned_set[.githooks/pre-commit]:-}" ]] || fail '.githooks/pre-commit is not ShellCheck-covered'
 [[ -n "${scanned_set[.githooks/pre-push]:-}" ]] || fail '.githooks/pre-push is not ShellCheck-covered'
 
+scripts/shellcheck-files.sh --print-roots >"$tmp/roots"
+while IFS= read -r -d '' root; do
+    trigger="$root/**"
+    trigger_count="$(grep -F -c -- "- \"$trigger\"" .github/workflows/e2e.yml || true)"
+    ((trigger_count == 2)) || fail "ShellCheck root $root must trigger both push and pull_request e2e jobs"
+done <"$tmp/roots"
+
 if scripts/shellcheck-files.sh "$tmp/missing-root" >"$tmp/out" 2>"$tmp/err"; then
     fail 'missing search root was accepted'
 fi

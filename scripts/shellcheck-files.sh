@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+default_roots=(tests/e2e tests/release scripts assets/demo .githooks)
+
+if [[ "${1:-}" == "--print-roots" ]]; then
+    printf '%s\0' "${default_roots[@]}"
+    exit 0
+fi
+
 if (($# > 0)); then
     roots=("$@")
 else
-    roots=(tests/e2e tests/release scripts assets/demo .githooks)
+    roots=("${default_roots[@]}")
 fi
 
 for root in "${roots[@]}"; do
