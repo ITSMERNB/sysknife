@@ -12,6 +12,8 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-09-15
+
 ### Added
 
 - Add read-only nftables ruleset and firewall-backend observations. General
