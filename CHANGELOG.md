@@ -12,6 +12,54 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+### Added
+
+- **Broken links in the generated mdBook fail the build.**
+  ([#379](https://github.com/lacs-project/sysknife/pull/379))
+  `scripts/check-mdbook-links.sh` walks the built `book/` and resolves every
+  internal `.html` href against the file it sits next to, so a page that lost
+  its target during the build is caught before Pages publishes it. It runs in
+  `docs.yml` after `mdbook build` and in `docs-and-hygiene` against a fixture,
+  and it refuses when it has checked zero links, because a book nobody built
+  and a book with no broken links are otherwise the same silence (closes
+  [#371](https://github.com/lacs-project/sysknife/issues/371)). Thanks to
+  [@sonalisrisivani](https://github.com/sonalisrisivani).
+
+### Fixed
+
+- **The release rehearsal screen sees a publishing command behind a shell
+  prefix.** ([#513](https://github.com/lacs-project/sysknife/pull/513))
+  `check-rehearsal-publication.py` matched a tool name only at the start of a
+  command, so `if gh release create ...`, `FOO=1 gh release create ...` and
+  `env ... command gh release create ...` all passed a screen whose whole job
+  is to catch them. The pattern now accepts a run of shell prefixes before the
+  tool, handles a quoted assignment value containing a space, and adds `git` to
+  the tool list so a tag or a push is screened too. Twenty-one fixtures cover
+  the shapes, and two harmless lines hold the other edge (closes
+  [#503](https://github.com/lacs-project/sysknife/issues/503)). Thanks to
+  [@mikevillari](https://github.com/mikevillari).
+- **The contributing guide no longer tells you to install and run the
+  pre-commit framework.**
+  ([#512](https://github.com/lacs-project/sysknife/pull/512)) SysKnife's hooks
+  run through `core.hooksPath`; the framework is not used, and the guide's
+  "Check Locally" block listed `pre-commit run --all-files` alongside the real
+  commands. It now names `bash .githooks/pre-commit` and `scripts/ci-local.sh`,
+  and the Node prerequisite reads 22 in both places it appears.
+  `check_evidence_claims.py` gained a screen that refuses a framework command
+  inside any Markdown shell block, so the guide cannot drift back (closes
+  [#464](https://github.com/lacs-project/sysknife/issues/464)). Thanks to
+  [@Osheun](https://github.com/Osheun).
+- **The testing guide's provisioning default matches what `provision.sh`
+  pulls.** ([#515](https://github.com/lacs-project/sysknife/pull/515)) The
+  guide named `llama3.2:3b` as the default while the script defaulted to
+  `qwen3:8b`, the model the same page calls unusable without GPU passthrough,
+  so a contributor on a CPU-only VM downloaded 5 GB and then lost every story
+  to the thinking-mode timeout. `provider-parity.test.sh` now reads the default
+  out of the script and requires the guide's sentence and its `# default`
+  comment to name the same model (closes
+  [#501](https://github.com/lacs-project/sysknife/issues/501)). Thanks to
+  [@yuee3](https://github.com/yuee3).
+
 ## [0.22.0] — 2026-09-23
 
 ### Added
