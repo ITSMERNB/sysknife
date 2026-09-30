@@ -12,6 +12,40 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+### Fixed
+
+- **`sysknife history --since` accepts the ISO-8601 dates its help text
+  promised.** ([#521](https://github.com/lacs-project/sysknife/pull/521))
+  `--help` said ISO-8601 and the parser accepted only UTC RFC 3339, so
+  `--since 2026-09-01` and `--since 2026-09-01T02:00:00+02:00` were both
+  refused. A bare date now means midnight UTC, and a datetime with any offset is
+  normalised to UTC. The CLI help, `docs/cli.md`, the MCP `sysknife_history`
+  schema description and its error message describe that one parser the same
+  way. `audit export --since` is unchanged and still validated by the daemon
+  (closes [#519](https://github.com/lacs-project/sysknife/issues/519)). Thanks
+  to [@tayfuryldz](https://github.com/tayfuryldz).
+
+### Documented
+
+- **`sysknife doctor` is documented as doing what it does.**
+  ([#517](https://github.com/lacs-project/sysknife/pull/517))
+  `docs/configuration.md` promised a chain-integrity check, and `run_doctor`
+  never opens the audit store. The page now sends readers to
+  `sysknife audit verify` for the chain, and the sample in `docs/cli.md` shows
+  the socket as the URI `doctor` prints plus the `distro` line it had left out.
+  Two tests hold the docs to `print_doctor_ok`'s field order and refuse the old
+  chain-integrity claim (closes
+  [#500](https://github.com/lacs-project/sysknife/issues/500)). Thanks to
+  [@syf2211](https://github.com/syf2211).
+- **`SYSKNIFE_AUDIT_KEY_PATH` is no longer listed as daemon-only.**
+  ([#528](https://github.com/lacs-project/sysknife/pull/528))
+  `sysknife audit verify`, `sysknife audit checkpoint` and the MCP `doctor` and
+  audit-verify tools all resolve it. An operator who moved the key and set the
+  variable only in the daemon's unit, as that section said, got
+  `audit key not found` from `sysknife audit verify` in their own shell. The
+  section is gone and the variable's row names both surfaces. Thanks to
+  [@syf2211](https://github.com/syf2211).
+
 ## [0.24.0] — 2026-09-29
 
 ### Security
