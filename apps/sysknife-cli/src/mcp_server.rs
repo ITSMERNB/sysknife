@@ -317,8 +317,8 @@ pub struct HistoryInput {
     pub status: Option<String>,
     /// Filter by action name (e.g. `"InstallPackages"`).
     pub action: Option<String>,
-    /// Show only entries after this UTC RFC 3339 timestamp
-    /// (e.g. `"2026-01-15T10:30:00Z"`).
+    /// Show only entries after this ISO-8601 date or UTC-qualified datetime
+    /// (e.g. `"2026-01-15"` or `"2026-01-15T10:30:00Z"`).
     pub since: Option<String>,
     /// Maximum number of entries to return. Defaults to 20.
     pub limit: Option<u32>,
@@ -778,7 +778,7 @@ impl SysknifeMcpServer {
     /// Read-only and safe to call without first calling `sysknife_plan`;
     /// it never mutates system state. Mirrors `sysknife history`.
     #[tool(
-        description = "List past SysKnife audit-log entries. Read-only and safe to call without prior sysknife_plan. Filters: status (succeeded/failed/canceled/...), action (canonical action name), since (UTC RFC 3339 timestamp), limit (default 20). Returns a list of HistoryEntry rows."
+        description = "List past SysKnife audit-log entries. Read-only and safe to call without prior sysknife_plan. Filters: status (succeeded/failed/canceled/...), action (canonical action name), since (ISO-8601 date or UTC-qualified datetime), limit (default 20). Returns an object with an entries array of HistoryEntry rows."
     )]
     async fn sysknife_history(
         &self,
@@ -1122,8 +1122,8 @@ async fn history_with_client(
             Some(h) => Some(h),
             None => {
                 return Err(format!(
-                    "since: {s:?} is not a valid past UTC RFC 3339 timestamp \
-                     (accepted: 2026-01-15T10:30:00Z)"
+                    "since: {s:?} is not a valid past ISO-8601 date or datetime \
+                     (accepted: 2026-01-15 or 2026-01-15T10:30:00Z)"
                 ));
             }
         },
