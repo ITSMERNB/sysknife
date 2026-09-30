@@ -12,6 +12,29 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+### Added
+
+- **Approval events sign the account that granted, spent or revoked them.**
+  ([#491](https://github.com/lacs-project/sysknife/pull/491)) The transaction
+  chain has named its requester since `ChainIdentity::V3`, but
+  `approval_granted`, `approval_consumed` and `approval_revoked` signed six
+  fields and no account, so on a host with two admins the chain could not say
+  who authorised what an agent proposed. Migration 4 adds `chain_version` and
+  `caller_principal` to `audit_events` on both backends. New approval events are
+  written at version 2 with the acting account inside the signed message, and
+  every existing row stays at version 1 untouched, because rewriting a signed
+  row's message would report the whole chain as broken. `sysknife audit verify`
+  reads a mixed chain, reports a version 2 row relabelled as version 1 as
+  broken, and exits 2 on a version it does not know. Status events stay at
+  version 1: they are written with no caller in scope (closes
+  [#249](https://github.com/lacs-project/sysknife/issues/249)). Thanks to
+  [@Georgefifth](https://github.com/Georgefifth).
+
+  **Upgrade the CLI with the daemon.** Once a new daemon has applied migration
+  4, `sysknife` 0.24.0 and earlier refuse the audit database outright, on
+  SQLite and Postgres alike: `schema version 4 is newer than this binary
+  supports (3)`.
+
 ### Fixed
 
 - **`sysknife history --since` accepts the ISO-8601 dates its help text
