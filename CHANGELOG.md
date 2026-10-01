@@ -12,6 +12,8 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-10-01
+
 ### Added
 
 - **Approval events sign the account that granted, spent or revoked them.**
