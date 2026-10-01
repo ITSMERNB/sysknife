@@ -12,6 +12,20 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ## [Unreleased]
 
+### Documentation
+
+- **`CONTRIBUTING.md` says the suite is only observed on Linux, and what a Mac
+  run shows.** ([#564](https://github.com/lacs-project/sysknife/pull/564))
+  Every CI job runs on `ubuntu-latest`, and two contributors on macOS read their
+  red runs as their own mistake. The new section records a survey on a hosted
+  `macos-26-arm64` runner: `sysknife-cli` does not compile there yet, and the
+  rest of the workspace runs with thirteen known host-assumption failures, listed
+  in `tests/evidence/macos-survey.json`. A release test reads the documented
+  command out of `CONTRIBUTING.md` and fails when it selects no tests or
+  excludes a package that no longer exists (closes
+  [#411](https://github.com/lacs-project/sysknife/issues/411)). Thanks to
+  [@yuee3](https://github.com/yuee3).
+
 ## [0.25.0] — 2026-10-01
 
 ### Added
