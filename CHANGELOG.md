@@ -37,6 +37,26 @@ Releases before `0.2.5` predate the public launch; their notes live in the
 
 ### Fixed
 
+- **`sysknife-setup --uninstall` removes the editor files it wrote, and only
+  those.** ([#539](https://github.com/lacs-project/sysknife/pull/539))
+  Uninstall left `.cursor/mcp.json`, the SysKnife block in
+  `~/.codex/config.toml`, which can hold a provider API key, and the managed
+  section of `AGENTS.md` on disk. It now takes SysKnife's server out of
+  `.cursor/mcp.json` and keeps every other server, rewriting the file at mode
+  `0600`, and cuts only SysKnife's block out of the Codex config and
+  `AGENTS.md`. Tables a user added after the block survive, including
+  `[[array]]` tables and headers with a trailing comment (closes
+  [#526](https://github.com/lacs-project/sysknife/issues/526)). Thanks to
+  [@tayfuryldz](https://github.com/tayfuryldz).
+- **The audit key path is resolved in one place.**
+  ([#540](https://github.com/lacs-project/sysknife/pull/540))
+  `resolve_audit_key_path`'s doc comment called it the single definition of the
+  key's location, and four call sites read `SYSKNIFE_AUDIT_KEY_PATH` by hand
+  instead. All four now call it with the database path their old copy used, so
+  no key moves on disk, and a test walks both crates' source trees and fails if
+  an inline copy comes back anywhere in them (closes
+  [#530](https://github.com/lacs-project/sysknife/issues/530)). Thanks to
+  [@tayfuryldz](https://github.com/tayfuryldz).
 - **`sysknife history --since` accepts the ISO-8601 dates its help text
   promised.** ([#521](https://github.com/lacs-project/sysknife/pull/521))
   `--help` said ISO-8601 and the parser accepted only UTC RFC 3339, so
