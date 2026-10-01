@@ -1877,6 +1877,42 @@ pub fn checkpoint_outcome_to_exit_code(outcome: &CheckpointOutcome) -> i32 {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn audit_key_env_resolution_is_centralised() {
+        const INLINE_RESOLUTION: &str = "std::env::var(\"SYSKNIFE_AUDIT_KEY_PATH\")";
+        let daemon_src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let cli_src =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/sysknife-cli/src");
+
+        let mut roots = vec![daemon_src.clone(), cli_src.clone()];
+        let mut files_checked = 0;
+        while let Some(dir) = roots.pop() {
+            for entry in std::fs::read_dir(&dir).expect("source directory must be readable") {
+                let path = entry.expect("source entry must be readable").path();
+                if path.is_dir() {
+                    roots.push(path);
+                    continue;
+                }
+                if path.extension().and_then(|ext| ext.to_str()) != Some("rs")
+                    || path == daemon_src.join("audit_chain.rs")
+                {
+                    continue;
+                }
+                files_checked += 1;
+                let source = std::fs::read_to_string(&path).expect("Rust source must be readable");
+                assert!(
+                    !source.contains(INLINE_RESOLUTION),
+                    "{} must resolve the audit key through resolve_audit_key_path",
+                    path.display()
+                );
+            }
+        }
+        assert!(
+            files_checked >= 60,
+            "source walk unexpectedly checked only {files_checked} Rust files"
+        );
+    }
+
     /// The exhaustiveness the old comment claimed and did not have.
     ///
     /// This match is over the enum, so adding a variant without an arm fails
