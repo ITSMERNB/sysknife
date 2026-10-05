@@ -433,7 +433,7 @@ run_postgres_contract_group() {
     if ! "$runtime" run -d --rm \
         --name "$POSTGRES_CONTAINER_NAME" \
         -e POSTGRES_USER=sysknife \
-        -e POSTGRES_PASSWORD=[REDACTED] \
+        -e POSTGRES_PASSWORD=sysknife \
         -e POSTGRES_DB=sysknife_test \
         -p "127.0.0.1:${POSTGRES_HOST_PORT}:5432" \
         postgres:17-alpine >/dev/null; then

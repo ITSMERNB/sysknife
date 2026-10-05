@@ -137,7 +137,7 @@ as a service container; do the same locally:
 
 ```sh
 podman run -d --name sysknife-pg -p 55987:5432 \
-  -e POSTGRES_USER=sysknife -e POSTGRES_PASSWORD=[REDACTED] \
+  -e POSTGRES_USER=sysknife -e POSTGRES_PASSWORD=sysknife \
   -e POSTGRES_DB=sysknife_test docker.io/library/postgres:17-alpine
 
 export SYSKNIFE_TEST_POSTGRES_URL=postgres://sysknife:sysknife@127.0.0.1:55987/sysknife_test
@@ -228,10 +228,10 @@ does not execute the actions against your host.
 
 ```sh
 # With an Anthropic key
-ANTHROPIC_API_KEY=[REDACTED] tests/e2e/dev-stories.sh
+ANTHROPIC_API_KEY=sk-ant-... tests/e2e/dev-stories.sh
 
 # With an OpenAI key
-OPENAI_API_KEY=[REDACTED] tests/e2e/dev-stories.sh
+OPENAI_API_KEY=sk-proj-... tests/e2e/dev-stories.sh
 
 # With local Ollama (must have a tool-capable model pulled)
 tests/e2e/dev-stories.sh

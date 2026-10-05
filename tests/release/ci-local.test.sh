@@ -170,6 +170,29 @@ validation_succeeded
         self.assertIn('ci-local: INCOMPLETE', result.stdout)
         self.assertNotIn('ci-local: PASS', result.stdout)
 
+    def test_privileged_discovery_failure_is_a_hard_gate(self):
+        code = functions('record', 'run_shell_tests',
+                         'print_summary', 'validation_succeeded') + '''
+RESULTS=(); hard_failures=0; required_skips=(); mode=full
+privileged_ci_shell_tests() { return 1; }
+is_root() { return 0; }
+run_step() { :; }
+run_shell_tests
+print_summary
+validation_succeeded
+'''
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / 'tests/release').mkdir(parents=True)
+            (root / 'tests/e2e').mkdir(parents=True)
+            (root / 'tests/release/reachable.test.sh').touch()
+            result = bash(code, root)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('hygiene: could not derive privileged CI shell tests',
+                      result.stdout)
+        self.assertNotIn('ci-local: PASS', result.stdout)
+
     def test_podman_precedes_docker(self):
         code = functions('record', 'run_postgres_contract_group') + '''
 RESULTS=(); hard_failures=0; required_skips=(); run_postgres=true
