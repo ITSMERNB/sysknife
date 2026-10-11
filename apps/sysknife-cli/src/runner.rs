@@ -2098,25 +2098,34 @@ pub async fn run_intent(intent: String, opts: &RunOpts, log: &Logger) -> Result<
         let mut first_line = true;
 
         let approval_receipt = exec_client.approve(&prepared.transaction_id).await?;
-        let exec_result = exec_client
-            .execute(
-                &prepared.transaction_id,
-                step.action_name(),
-                step.params(),
-                &approval_receipt,
-                |line| {
-                    if first_line {
-                        finish_spinner(&exec_spinner_ref);
-                        first_line = false;
-                    }
-                    if opts.json {
-                        log.println(line);
-                    } else {
-                        crate::render::print_output_line(line, log);
-                    }
-                },
-            )
-            .await;
+        let exec_result = execute_step_checked(
+            &exec_client,
+            &prepared.transaction_id,
+            step.action_name(),
+            step.params(),
+            &approval_receipt,
+            |line| {
+                if first_line {
+                    finish_spinner(&exec_spinner_ref);
+                    first_line = false;
+                }
+                if opts.json {
+                    log.println(line);
+                } else {
+                    crate::render::print_output_line(line, log);
+                }
+            },
+            |result| {
+                if opts.json {
+                    log.println(
+                        &serde_json::to_string(result).expect("ResultEnvelope is Serialize"),
+                    );
+                } else {
+                    crate::render::print_step_done(result, log);
+                }
+            },
+        )
+        .await;
 
         // Always clear the exec spinner regardless of success or error.
         // finish_spinner() is idempotent, so this is safe even if the callback
@@ -2124,16 +2133,9 @@ pub async fn run_intent(intent: String, opts: &RunOpts, log: &Logger) -> Result<
         // this prevents the spinner artifact from being left on the terminal.
         finish_spinner(&exec_spinner);
 
-        let result = exec_result?;
-        if opts.json {
-            log.println(&serde_json::to_string(&result).expect("ResultEnvelope is Serialize"));
-        } else {
-            crate::render::print_step_done(&result, log);
-        }
         // A completed IPC exchange is not proof the action succeeded.
-        // Halting here prevents dependent steps from running after failure or
-        // before a required reboot; the final success banner is not printed.
-        step_completion_verdict(step.action_name(), result.status, &result.summary)?;
+        // This checked path refuses to advance after a failing or rebooting job.
+        exec_result?;
     }
 
     if !opts.json {
@@ -2141,6 +2143,30 @@ pub async fn run_intent(intent: String, opts: &RunOpts, log: &Logger) -> Result<
     }
 
     Ok(())
+}
+
+/// Production step boundary, exercised with a framed-socket daemon double.
+/// Render each final envelope (including failures) before refusing to advance.
+pub(crate) async fn execute_step_checked(
+    client: &DaemonClient,
+    transaction_id: &TransactionId,
+    action_name: &str,
+    params: &Value,
+    approval_receipt: &sysknife_types::ApprovalReceipt,
+    on_line: impl FnMut(&str),
+    on_completed: impl FnOnce(&sysknife_types::ResultEnvelope),
+) -> Result<(), CliError> {
+    let result = client
+        .execute(
+            transaction_id,
+            action_name,
+            params,
+            approval_receipt,
+            on_line,
+        )
+        .await?;
+    on_completed(&result);
+    step_completion_verdict(action_name, result.status, &result.summary)
 }
 
 /// Enforce the daemon's actual terminal job status before proceeding to the
@@ -3425,10 +3451,13 @@ mod tests {
         let end = src[start..].find("// run_repl").map(|i| start + i).unwrap();
         let main_loop = &src[start..end];
         assert!(
-            main_loop.contains(
-                "step_completion_verdict(step.action_name(), result.status, &result.summary)?"
-            ),
-            "the CLI execution loop must enforce the step terminal status"
+            main_loop.contains("execute_step_checked("),
+            "the CLI execution loop must invoke the daemon-backed checked step boundary"
+        );
+        assert!(
+            main_loop
+                .contains("step_completion_verdict(action_name, result.status, &result.summary)"),
+            "the checked step boundary must enforce the daemon's terminal status"
         );
     }
 
