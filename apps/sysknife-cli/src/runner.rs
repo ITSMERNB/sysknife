@@ -25,7 +25,7 @@ use sysknife_brain::config::BrainConfig;
 use sysknife_brain::planner::{LlmPlanner, Plan, PlanRiskLevel};
 use sysknife_brain::PlanEvent;
 use sysknife_types::{
-    DistroHint, RiskLevel, TransactionId, DISTRO_FAMILY_DEBIAN, DISTRO_FAMILY_FEDORA,
+    DistroHint, JobState, RiskLevel, TransactionId, DISTRO_FAMILY_DEBIAN, DISTRO_FAMILY_FEDORA,
     DISTRO_FAMILY_OTHER,
 };
 
@@ -2124,13 +2124,16 @@ pub async fn run_intent(intent: String, opts: &RunOpts, log: &Logger) -> Result<
         // this prevents the spinner artifact from being left on the terminal.
         finish_spinner(&exec_spinner);
 
-        exec_result.map(|result| {
-            if opts.json {
-                log.println(&serde_json::to_string(&result).expect("ResultEnvelope is Serialize"));
-            } else {
-                crate::render::print_step_done(&result, log);
-            }
-        })?;
+        let result = exec_result?;
+        if opts.json {
+            log.println(&serde_json::to_string(&result).expect("ResultEnvelope is Serialize"));
+        } else {
+            crate::render::print_step_done(&result, log);
+        }
+        // A completed IPC exchange is not proof the action succeeded.
+        // Halting here prevents dependent steps from running after failure or
+        // before a required reboot; the final success banner is not printed.
+        step_completion_verdict(step.action_name(), result.status, &result.summary)?;
     }
 
     if !opts.json {
@@ -2138,6 +2141,24 @@ pub async fn run_intent(intent: String, opts: &RunOpts, log: &Logger) -> Result<
     }
 
     Ok(())
+}
+
+/// Enforce the daemon's actual terminal job status before proceeding to the
+/// next plan step. A reboot is an incomplete run, not a failed action.
+fn step_completion_verdict(
+    action_name: &str,
+    status: JobState,
+    summary: &str,
+) -> Result<(), CliError> {
+    match status {
+        JobState::Succeeded => Ok(()),
+        JobState::NeedsReboot => Err(CliError::NeedsReboot(format!(
+            "step {action_name} needs a reboot before subsequent steps can run: {summary}"
+        ))),
+        other => Err(CliError::ExecutionFailed(format!(
+            "step {action_name} ended in {other:?}: {summary}"
+        ))),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -3348,6 +3369,69 @@ mod tests {
     /// `rollback_available` arrived afterwards, when consent had already been
     /// given. A behavioural test would need a live daemon and an LLM, so the
     /// order is pinned in the source instead.
+    #[test]
+    fn execution_failure_stops_following_steps_and_exits_two() {
+        use sysknife_types::JobState;
+        let statuses = [JobState::Succeeded, JobState::Failed, JobState::Succeeded];
+        let mut executed = 0usize;
+        let mut failure = None;
+        for status in statuses {
+            executed += 1;
+            let result = step_completion_verdict("install foo", status, "daemon rejected install");
+            if let Err(err) = result {
+                failure = Some(err);
+                break;
+            }
+        }
+        assert_eq!(
+            executed, 2,
+            "third step must never execute after failed second step"
+        );
+        let err = failure.expect("failed step must halt execution");
+        assert_eq!(err.exit_code(), 2);
+        assert!(err.to_string().contains("install foo"), "{err}");
+        assert!(err.to_string().contains("daemon rejected install"), "{err}");
+    }
+
+    #[test]
+    fn completion_states_never_report_false_success() {
+        use sysknife_types::JobState;
+        assert!(step_completion_verdict("ok", JobState::Succeeded, "done").is_ok());
+        for state in [
+            JobState::Failed,
+            JobState::Canceled,
+            JobState::RolledBack,
+            JobState::Queued,
+            JobState::Running,
+        ] {
+            let err = step_completion_verdict("step", state, "not successful").unwrap_err();
+            assert_eq!(err.exit_code(), 2, "{state:?}");
+        }
+        let reboot =
+            step_completion_verdict("restart required", JobState::NeedsReboot, "reboot pending")
+                .unwrap_err();
+        assert_eq!(
+            reboot.exit_code(),
+            5,
+            "reboot needed is not an execution failure"
+        );
+        assert!(reboot.to_string().contains("restart required"));
+    }
+
+    #[test]
+    fn completed_step_verdict_is_used_in_execution_loop() {
+        let src = include_str!("runner.rs");
+        let start = src.find("    // ---- execute steps ---").unwrap();
+        let end = src[start..].find("// run_repl").map(|i| start + i).unwrap();
+        let main_loop = &src[start..end];
+        assert!(
+            main_loop.contains(
+                "step_completion_verdict(step.action_name(), result.status, &result.summary)?"
+            ),
+            "the CLI execution loop must enforce the step terminal status"
+        );
+    }
+
     #[test]
     fn the_execute_loop_previews_before_it_gates() {
         let src = include_str!("runner.rs");
