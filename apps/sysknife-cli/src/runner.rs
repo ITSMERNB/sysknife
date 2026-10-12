@@ -3386,15 +3386,6 @@ mod tests {
         }
     }
 
-    /// Structural guard on the execute loop: the daemon preview must be
-    /// fetched before any approval decision is taken for that step.
-    ///
-    /// The defect this replaces was purely one of order — the operator was
-    /// asked "execute?" while only planner summaries had been printed, and the
-    /// preview carrying `proposed_change`, `expected_side_effects` and
-    /// `rollback_available` arrived afterwards, when consent had already been
-    /// given. A behavioural test would need a live daemon and an LLM, so the
-    /// order is pinned in the source instead.
     #[test]
     fn execution_failure_stops_following_steps_and_exits_two() {
         use sysknife_types::JobState;
@@ -3461,6 +3452,15 @@ mod tests {
         );
     }
 
+    /// Structural guard on the execute loop: the daemon preview must be
+    /// fetched before any approval decision is taken for that step.
+    ///
+    /// The defect this replaces was purely one of order — the operator was
+    /// asked "execute?" while only planner summaries had been printed, and the
+    /// preview carrying `proposed_change`, `expected_side_effects` and
+    /// `rollback_available` arrived afterwards, when consent had already been
+    /// given. A behavioural test would need a live daemon and an LLM, so the
+    /// order is pinned in the source instead.
     #[test]
     fn the_execute_loop_previews_before_it_gates() {
         let src = include_str!("runner.rs");
