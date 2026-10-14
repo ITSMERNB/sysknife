@@ -4104,12 +4104,12 @@ mod tests {
         /// in a test. Removing its `exec_result?` must make this test fail.
         #[tokio::test]
         async fn execute_plan_halts_after_failed_or_rebooting_second_step() {
-            let three_steps = plan(&["GetDiskUsage", "GetMemoryInfo", "GetCpuInfo"]);
+            let three_steps = plan(&["GetDiskUsage", "GetMemoryInfo", "RestartService"]);
 
             for (status, expected_exit) in [("failed", 2), ("needs_reboot", 5)] {
                 let mut options = opts(PathBuf::new());
                 options.non_interactive = true;
-                options.max_risk = Some(MaxRisk::Low);
+                options.max_risk = Some(MaxRisk::Medium);
 
                 let (result, events) =
                     run_with_statuses(&three_steps, options, &[], &[("GetMemoryInfo", status)])
