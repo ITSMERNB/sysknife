@@ -4008,7 +4008,10 @@ mod tests {
                             "type": "approval_response", "approval_receipt": "mock-receipt",
                         }),
                         "execute" => {
-                            let status = statuses.get(action).map(String::as_str).unwrap_or("succeeded");
+                            let status = statuses
+                                .get(action)
+                                .map(String::as_str)
+                                .unwrap_or("succeeded");
                             json!({
                                 "type": "job_completed",
                                 "result": {
@@ -4018,7 +4021,7 @@ mod tests {
                                     "transaction_id": request["transaction_id"],
                                 }
                             })
-                        },
+                        }
                         other => panic!("unexpected daemon request {other}"),
                     };
                     let bytes = serde_json::to_vec(&response).unwrap();
@@ -4108,13 +4111,9 @@ mod tests {
                 options.non_interactive = true;
                 options.max_risk = Some(MaxRisk::Low);
 
-                let (result, events) = run_with_statuses(
-                    &three_steps,
-                    options,
-                    &[],
-                    &[("GetMemoryInfo", status)],
-                )
-                .await;
+                let (result, events) =
+                    run_with_statuses(&three_steps, options, &[], &[("GetMemoryInfo", status)])
+                        .await;
 
                 let err = result.expect_err("daemon failure/reboot must stop the plan");
                 assert_eq!(err.exit_code(), expected_exit, "{status}: {err}");
